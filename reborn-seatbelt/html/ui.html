@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+	  <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
+        <script>
+            var audioPlayer = null;
+            // Listen for NUI Messages.
+            window.addEventListener('message', function(event) {
+                // Check for playSound transaction
+                if (event.data.transactionType == "playSound") {
+
+                  if (audioPlayer != null) {
+                    audioPlayer.pause();
+                  }
+
+                  audioPlayer = new Audio("./" + event.data.transactionFile + ".ogg");
+                  audioPlayer.volume = event.data.transactionVolume;
+				          audioPlayer.loop = false;
+                  audioPlayer.play();
+
+                }
+                if (event.data.transactionType == "stopSound") {
+                  if (audioPlayer != null) {
+                    audioPlayer.pause();
+					           audioPlayer.currentTime = 0;
+                  }
+                }
+            });
+        </script>
+
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  	<script src="app.js"></script>
+  	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<div id="container">
+		<header>
+			<img src="../img/seatbelt.png" class="blink-image" alt="header">
+		</header>
+	</div>
+</body>
+</html>
+
