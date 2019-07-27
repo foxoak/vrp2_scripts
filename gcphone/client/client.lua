@@ -159,12 +159,11 @@ end)
    useMouse = false
    ignoreFocus = false
    takePhoto = false
-   lastFrameIsOpen = false
+   hasFocus = false
 
    PhoneInCall = {}
    currentPlaySound = false
-   soundId = 1485
-
+   soundDistanceMax = 8.0
 
   Citizen.CreateThread(function()
     while true do
@@ -179,13 +178,18 @@ end)
             SendNUIMessage({keyUp = value.event})
           end
         end
-        local nuiFocus = useMouse and not ignoreFocus
-        SetNuiFocus(nuiFocus, nuiFocus)
-        lastFrameIsOpen = true        
+        if useMouse == true and hasFocus == ignoreFocus then
+          local nuiFocus = not hasFocus
+          SetNuiFocus(nuiFocus, nuiFocus)
+          hasFocus = nuiFocus       
+        elseif useMouse == false and hasFocus == true then
+          SetNuiFocus(false, false)
+          hasFocus = false
+        end
       else
-        if lastFrameIsOpen == true then
-         SetNuiFocus(false, false)
-          lastFrameIsOpen = false 
+        if hasFocus  == true then
+          SetNuiFocus(false, false)
+          hasFocus = false 
        end   
       end
     end
@@ -193,19 +197,22 @@ end)
   end)
 
   Citizen.CreateThread(function ()
+    local mod = 0
     while true do 
       local playerPed   = PlayerPedId()
       local coords      = GetEntityCoords(playerPed)
       local inRangeToActivePhone = false
+      local inRangedist = 0
       for i, _ in pairs(PhoneInCall) do 
           local dist = GetDistanceBetweenCoords(
             PhoneInCall[i].coords.x, PhoneInCall[i].coords.y, PhoneInCall[i].coords.z,
             coords.x, coords.y, coords.z, 1)
-          if (dist <= 6.0) then
+          if (dist <= soundDistanceMax) then
             DrawMarker(1, PhoneInCall[i].coords.x, PhoneInCall[i].coords.y, PhoneInCall[i].coords.z,
                 0,0,0, 0,0,0, 0.1,0.1,0.1, 0,255,0,255, 0,0,0,0,0,0,0)
             inRangeToActivePhone = true
-            if (dist <= 3.5) then 
+            inRangedist = dist
+            if (dist <= 2.5) then 
               SetTextComponentFormat("STRING")
               AddTextComponentString("~INPUT_PICKUP~ Atender")
               DisplayHelpTextFromStringLabel(0, 0, 1, -1)
@@ -213,7 +220,7 @@ end)
                 PhonePlayCall(true)
                 TakeAppel(PhoneInCall[i])
                 PhoneInCall = {}
-                StopSound(soundId)
+                StopSoundJS('ring2.ogg')
               end
             end
             break
@@ -223,11 +230,17 @@ end)
         showFixePhoneHelper(coords)
       end
       if inRangeToActivePhone == true and currentPlaySound == false then
-        PlaySound(soundId, "Remote_Ring", "Phone_SoundSet_Michael", 0, 0, 1)
+        PlaySoundJS('ring2.ogg', 0.2 + (inRangedist - soundDistanceMax) / -soundDistanceMax * 0.8 )
         currentPlaySound = true
+      elseif inRangeToActivePhone == true then
+        mod = mod + 1
+        if (mod == 15) then
+          mod = 0
+          SetSoundVolumeJS('ring2.ogg', 0.2 + (inRangedist - soundDistanceMax) / -soundDistanceMax * 0.8 )
+        end        
       elseif inRangeToActivePhone == false and currentPlaySound == true then
         currentPlaySound = false
-        StopSound(soundId)
+        StopSoundJS('ring2.ogg')
       end
       Citizen.Wait(0)
     end
@@ -281,11 +294,14 @@ end)
   RegisterNUICallback('takePhoto', function(data, cb)
     CreateMobilePhone(1)
     CellCamActivate(true, true)
-    print(json.encode(data))
     takePhoto = true
+    Citizen.Wait(0)
+    if hasFocus == true then
+      SetNuiFocus(false, false)
+      hasFocus = false
+    end
     while takePhoto do
       Citizen.Wait(0)
-      SetNuiFocus(false, false)
 
       if IsControlJustPressed(1, 27) then -- Toogle Mode
         frontCam = not frontCam
@@ -688,10 +704,27 @@ AddEventHandler('gcphone:autoAcceptCall', function(infoCall)
   SendNUIMessage({ event = "autoAcceptCall", infoCall = infoCall})
 end)
 
+--===================
+--Play sound JS
+--===================
+function PlaySoundJS (sound, volume)
+  print('Play Sound!')
+  SendNUIMessage({ event = 'playSound', sound = sound, volume = volume })
+end
 
+function SetSoundVolumeJS (sound, volume)
+  print('SET VOLUME!')
+  SendNUIMessage({ event = 'setSoundVolume', sound = sound, volume = volume})
+end
 
+function StopSoundJS (sound)
+  print('STAPH')
+  SendNUIMessage({ event = 'stopSound', sound = sound})
+end
 
-
+--===================
+--End play sound JS
+--===================
 
 
 

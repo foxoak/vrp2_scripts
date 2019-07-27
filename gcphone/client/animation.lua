@@ -19,8 +19,7 @@ local ANIMS = {
 	['cellphone@'] = {
 		['out'] = {
 			['text'] = 'cellphone_text_in',
-			['call'] = 'cellphone_call_listen_base',
-			
+			['call'] = 'cellphone_call_listen_base',	
 		},
 		['text'] = {
 			['out'] = 'cellphone_text_out',

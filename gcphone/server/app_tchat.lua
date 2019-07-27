@@ -1,6 +1,6 @@
 
 function vRPgcphone.tunnel:gcphone_tchat_channel(channel, cb)
-  print('gcphone_tchat_channel')
+  
     user = vRP.get_by_source[source]
     messages = vRP:query("vRP/tchatGetmessages", { 
         channel = channel
@@ -10,7 +10,6 @@ end
 
 function vRPgcphone.tunnel:gcPhone_tchat_addMessage(channel, message)
 
-  print('gcPhone_tchat_addMessage')
   vRP:query("tchatAddMessage", {
     channel = channel,
     message = message

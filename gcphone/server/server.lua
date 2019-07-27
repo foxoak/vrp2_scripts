@@ -127,7 +127,7 @@ function vRPgcphone:__construct()
 		vRP:prepare("vRP/saveAppels","INSERT INTO phone_calls (`owner`, `num`,`incoming`, `accepts`) VALUES(@owner, @num, @incoming, @accepts)")
 		vRP:prepare("vRP/appelsDeleteHistorique","DELETE FROM phone_calls WHERE `owner` = @owner AND `num` = @num")
 		vRP:prepare("vRP/appelsDeleteAllHistorique","DELETE FROM phone_calls WHERE `owner` = @owner")
-		vRP:prepare("vRP/DeleteOldMsgs","DELETE FROM phone_messages WHERE (DATEDIFF(CURRENT_DATE,time) > 10)")
+		vRP:prepare("vRP/DeleteOldMsgs","DELETE FROM phone_messages WHERE (DATEDIFF(CURRENT_DATE,time) > 30)")
 		vRP:prepare("vRP/tchatGetmessages","SELECT * FROM phone_app_chat WHERE channel = @channel ORDER BY time DESC LIMIT 100")
 		vRP:prepare("vRP/tchatAddMessage",[[ INSERT INTO phone_app_chat (`channel`, `message`) VALUES(@channel, @message);
 															SELECT * from phone_app_chat WHERE `id` = (SELECT LAST_INSERT_ID());]])		
@@ -190,7 +190,7 @@ function vRPgcphone:__construct()
 
 
 		vRP:execute("vRP/Creategcphone")
-		print('Apagando msgs antigas...')
+		print('GCPHONE: Apagando msgs antigas...')
 		vRP:execute("vRP/DeleteOldMsgs")
   	end)
 
@@ -244,8 +244,10 @@ function vRPgcphone:__construct()
 	        AppelsEnCours[id].rtcAnswer = rtcAnswer
 	        PhoneFixeInfo[id] = nil
 	        self.remote._gcPhone_notifyFixePhoneChange(-1, PhoneFixeInfo)
-	        self.remote._gcPhone_acceptCall(AppelsEnCours[id].transmitter_src, AppelsEnCours[id], true)
-	        self.remote._gcPhone_acceptCall(AppelsEnCours[id].receiver_src, AppelsEnCours[id], false)
+          self.remote._gcPhone_acceptCall(AppelsEnCours[id].transmitter_src, AppelsEnCours[id], true)
+          SetTimeout(1000, function()
+            self.remote._gcPhone_acceptCall(AppelsEnCours[id].receiver_src, AppelsEnCours[id], false)
+          end)
 	        saveAppels(AppelsEnCours[id])
 	    end
 	end
@@ -318,7 +320,7 @@ function vRPgcphone:__construct()
 	        srcPhone = getNumberPhone(srcIdentifier)
 	    end
 	    print('CALL WITH NUMBER ' .. srcPhone)
-	    print(phone_number)
+
 	    local destPlayer = getIdentifierByPhoneNumber(phone_number)
 	    local is_valid = destPlayer ~= nil and destPlayer ~= srcIdentifier
 	    AppelsEnCours[indexCall] = {
@@ -345,7 +347,7 @@ function vRPgcphone:__construct()
 	                    --TriggerEvent('gcPhone:addCall', AppelsEnCours[indexCall])
 	                    self.remote._gcPhone_waitingCall(user.source, AppelsEnCours[indexCall], true)
 	                    self.remote._gcPhone_waitingCall(duser.source, AppelsEnCours[indexCall], false)
-	                    print(user.source)
+	                  
 	                else
 	                    --TriggerEvent('gcPhone:addCall', AppelsEnCours[indexCall])
 	                   self.remote._gcPhone_waitingCall(user.source, AppelsEnCours[indexCall], true)
@@ -651,14 +653,12 @@ function vRPgcphone.tunnel:gcPhone_startCall(phone_number, rtcOffer, extraData)
 end
 
 function vRPgcphone.tunnel:gcPhone_candidates(callId, candidates)
-    print('send cadidate', callId, candidates)
     if AppelsEnCours[callId] ~= nil then
         local source = source
         local to = AppelsEnCours[callId].transmitter_src
         if source == to then 
             to = AppelsEnCours[callId].receiver_src
         end
-        print('TO', to)
         self.remote._gcPhone_candidates(to, candidates)
     end
 end
@@ -676,7 +676,9 @@ function vRPgcphone.tunnel:gcPhone_acceptCall(infoCall, rtcAnswer)
             AppelsEnCours[id].is_accepts = true
             AppelsEnCours[id].rtcAnswer = rtcAnswer          
             self.remote._gcPhone_acceptCall(AppelsEnCours[id].transmitter_src, AppelsEnCours[id], true)
-            self.remote._gcPhone_acceptCall(AppelsEnCours[id].receiver_src, AppelsEnCours[id], false)
+            SetTimeout(1000, function() 
+              self.remote._gcPhone_acceptCall(AppelsEnCours[id].receiver_src, AppelsEnCours[id], false)
+            end)
             saveAppels(AppelsEnCours[id])
         end
     end
