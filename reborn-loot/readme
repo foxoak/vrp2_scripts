@@ -1,0 +1,8 @@
+EDIT
+modules/inventory.lua
+
+In funcion m_trash after "local px,py,pz = vRP.EXT.Base.remote.getPosition(user.source)"
+
+Add -> TriggerEvent("DropSystem:create",fullid,citem.name,parseInt(amount),px,py,pz)
+
+same call to any other script you want to use the same system.
